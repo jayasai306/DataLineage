@@ -1,0 +1,534 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- importing stylesheet-->
+<link rel="stylesheet" href="css\materialize.min.css">
+    <!-- importing javascript materialize files-->
+<script type="text/javascript" src="js\jquery-3.2.0.min.js"></script>           
+<script src="js\materialize.min.js"></script>
+<script type="text/javascript" src="smoothie-master/standalone/require.js"></script>
+
+<title>Visualization</title>
+<style >
+    table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+</style>
+    
+<script>
+    var antlr4 = require('antlr4/index');
+    var SQLLEXER = require('SQLLexer');
+    var SQLPARSER = require('SQLParser');
+    var SQLLISTENER = require('SQLListener'); 
+
+  var transformation_logic=new Array();
+  var source=new Array();
+  var dbsource;
+  var tbsource=new Array();
+  var tb_source;
+  var destination_table;
+  var destination_db;
+  var inp;
+  var select=false;
+  var create=false;
+  var alter=false;
+  var update=false;
+  var insert=false;
+  var create_view=false;
+  var inssel=false;
+  var tablename=new Array();
+  
+   function ReadCookie()
+    {
+         var allcookies = document.cookie;
+                         
+         // Get all the cookies pairs in an array
+         cookiearray = allcookies.split(';');
+            
+         // Now take key value pair out of this array
+         for(var i=0; i<cookiearray.length; i++){
+               name = cookiearray[i].split('=')[0];
+               value = cookiearray[i].split('=')[1];
+               inp=unescape(value);
+                func();
+               }
+    }
+	
+function func()
+    {
+   
+    var input = inp;
+document.getElementById("querydisplay").innerHTML = input;
+    console.log(input);	
+    var chars = new antlr4.InputStream(input);
+    var lexer = new SQLLEXER.SQLLexer(chars);
+	var tokens  = new antlr4.CommonTokenStream(lexer);
+	var parser = new SQLPARSER.SQLParser(tokens);
+	console.log(parser);
+	parser.buildParseTrees = true;
+	var tree = parser.parse();
+	console.log("Parsed: "+ tree.toStringTree());
+	
+	var printer = new SQLLISTENER.SQLListener();
+	antlr4.tree.ParseTreeWalker.DEFAULT.walk(printer, tree);
+	
+	if(select==true)
+	selecttable();
+	if(insert==true&&inssel==false)
+	inserttable();
+	if(create==true)
+	createtable();
+	if(update==true)
+	updatetable();
+	if(alter==true)
+	altertable();
+	if(inssel==true)
+	insseltable();
+	
+   };
+   			 
+// override default listener behavior
+SQLLISTENER.SQLListener.prototype.enterCreate_table_stmt=function(ctx){
+	create=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterFactored_select_stmt = function(ctx) {
+	select=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterInsert_stmt = function(ctx) {
+	insert=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterUpdate_stmt = function(ctx) {
+	update=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterAlter_table_stmt = function(ctx) {
+	alter=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterSelect_stmt = function(ctx) {
+	
+	inssel=true;
+};
+
+SQLLISTENER.SQLListener.prototype.enterCreate_view_stmt = function(ctx) {
+	create_view=true;
+
+};
+
+SQLLISTENER.SQLListener.prototype.exitView_name = function(ctx) {
+	destination_table=ctx.getText();
+
+};
+
+SQLLISTENER.SQLListener.prototype.enterQualified_table_name = function(ctx) {
+	if(update==true)
+	{
+		var temp=new Array();
+		temp=ctx.getText().split(".");
+		if(temp.length==2)
+		{
+			destination_db=temp[0];
+			destination_table=temp[1];
+		}
+		else
+		destination_table=temp[0];
+		
+	}
+};
+
+SQLLISTENER.SQLListener.prototype.exitInsert_table = function(ctx) {
+	console.log("inserttable");
+	if(insert==true)
+	{
+		var temp=ctx.getText().split(".");
+		if(temp.length==2)
+		{
+
+			destination_db=temp[0];
+			destination_table=temp[1];
+		}
+		else
+			destination_table=temp[0];
+	}
+	
+	
+};
+
+SQLLISTENER.SQLListener.prototype.exitCreate_table = function(ctx) {
+	console.log("createtable");
+	if(create==true)
+	{
+		var temp=ctx.getText().split(".");
+		if(temp.length==2)
+		{
+			destination_db=temp[0];
+			destination_table=temp[1];
+		}
+		else
+			destination_table=temp[0];
+	}
+
+};
+
+SQLLISTENER.SQLListener.prototype.exitResult= function(ctx) {
+		console.log("exitResult");
+	var temp=ctx.getText();
+	transformation_logic=temp.split(",");
+	var temp_1=new Array();
+	if(select==true||inssel==true)
+	for(var i=0;i<transformation_logic.length;i++)
+	{	
+		temp_1[i]=new Array();
+		temp_1[i]=transformation_logic[i].split(".");
+		if(temp_1[i].length==2)
+		tbsource[i]=temp_1[i][0];
+	}
+	
+	console.log("transformation_logic : "+transformation_logic);
+};
+
+SQLLISTENER.SQLListener.prototype.exitTable = function(ctx) {
+	console.log("exitTable");
+	var temp=ctx.getText().split(",");
+	if(select==true||inssel==true)
+	for(var i=0;i<temp.length;i++)
+	{	
+		source[i]=new Array();
+		source[i]=temp[i].split(".");
+		if(tbsource.length==0)
+		{
+		if(source[i].length==1)
+		{
+		
+			tb_source=source[i][0];
+		}
+		else
+			tb_source=source[i][1];
+			
+			
+		}
+	}
+	if(tb_source!=null)
+	for(var i=0;i<transformation_logic.length;i++)
+	tbsource[i]=tb_source;
+	for(var i=0;i<temp.length;i++)
+	{
+		if(source[i].length==2)
+		{
+		dbsource=source[i][0];
+		break;
+		}
+		else
+		dbsource="";
+	}	
+};
+    
+SQLLISTENER.SQLListener.prototype.exitTable_name = function(ctx) {
+	console.log("exitTable_name");
+	if(alter==true)
+	{	
+		
+		destination_table=ctx.getText();
+		
+	}
+	
+};
+
+SQLLISTENER.SQLListener.prototype.exitDatabase_name = function(ctx) {
+	
+	console.log("exitDatabase_name");
+	if(alter==true)
+	{
+		destination_db=ctx.getText();
+	}
+	
+};
+
+function selecttable()
+{
+var t="";
+for(var i=0;i<transformation_logic.length;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+
+for(var i=0;i<transformation_logic.length;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+};
+
+function inserttable()
+{
+var t="";
+transformation_logic[0]="";
+for(var i=0;i<1;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+for(var i=0;i<1;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+};
+  
+function createtable()
+{
+var t="";
+transformation_logic[0]="";
+for(var i=0;i<1;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+for(var i=0;i<1;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+};  
+
+function updatetable()
+{
+var t="";
+transformation_logic[0]="";
+for(var i=0;i<1;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+for(var i=0;i<1;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+}; 
+
+function altertable()
+{
+var t="";
+transformation_logic[0]="";
+for(var i=0;i<1;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+for(var i=0;i<1;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+}; 
+
+function insseltable()
+{
+var t="";
+for(var i=0;i<transformation_logic.length;i++)
+{
+	if(dbsource==undefined)
+	dbsource="";
+	if(tbsource[i]==undefined)
+	tbsource[i]="";
+	if(transformation_logic[i]==undefined)
+	transformation_logic="";
+	if(destination_table==undefined)
+	destination_table="";
+	if(destination_db==undefined)
+	destination_db="";
+}
+for(var i=0;i<transformation_logic.length;i++)
+{
+t+="<tr>"
+t+="<td>"+dbsource+"</td>"
+t+="<td>"+tbsource[i]+"</td>"
+t+="<td>"+transformation_logic[i]+"</td>"
+t+="<td>"+destination_table+"</td>"
+t+="<td>"+destination_db+"</td>"
+t+="</tr>"
+}
+$('#add').append(t);		
+};
+    
+function backhome()
+    {
+        window.location.assign("exam.html");
+    };
+
+</script>
+    
+</head>
+
+<body class="amber lighten-5" onload="ReadCookie()">
+    <br>
+    <nav class="teal lighten-1">
+    <div class="navbar-wrapper container">
+    <a class="brand-logo" white-text>LINEAGE TABLE</a>
+    </div>
+    </nav>
+<br>
+<br>
+    <div class="row">
+        <div class="col s12 m4 offset-m4">
+          <div class="card green lighten-3">
+              <span class="card-title "> Entered query is :</span>
+            <div id="querydisplay" class="card-content white-text">
+              </div>
+            </div>
+        </div>
+      </div>
+    
+    <br> <br>
+    <center>
+<table id="add" width="200" border="3">
+  <tbody>
+    <tr>
+      <th scope="col">Source Database</th>
+      <th scope="col">Source Table</th>
+      <th scope="col">Transformation Logic</th>
+      <th scope="col">Destination Table</th>
+      <th scope="col">Destination Database</th>
+    </tr>
+  </tbody>
+</table>
+<br>
+<br>
+    <button class="btn waves-effect waves-light" id="visual">Visualize</button>
+    <button class="btn waves-effect waves-light" id="back" onClick="backhome()">Back</button>
+        
+    </center>
+<div id="myModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <p>Visualize module</p>
+  </div>
+</div>
+<script>
+var modal = document.getElementById('myModal');
+var btn = document.getElementById("visual");
+var span = document.getElementsByClassName("close")[0];
+btn.onclick = function() {
+    modal.style.display = "block";
+}
+span.onclick = function() {
+    modal.style.display = "none";
+}
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+</body>
+</html>

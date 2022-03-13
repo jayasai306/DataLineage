@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>HomePage</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css\materialize.min.css">
+    
+    <!-- importing javascript materialize files-->
+
+    <script type="text/javascript" src="js\jquery-3.2.0.min.js"></script>           
+    <script type="text/javascript" src="js\materialize.min.js"></script>
+    <script type="text/javascript" src="smoothie-master/standalone/require.js"></script>
+    <script type="application/javascript"></script>
+
+<script type="application/javascript">
+    var antlr4 = require('antlr4/index');
+    var SQLLEXER = require('SQLLexer');
+    var SQLPARSER = require('SQLParser');
+    var SQLLISTENER = require('SQLListener'); 
+
+	function clrfun()
+		{
+			document.getElementById("txt").value="";
+		}
+	function validatefun()
+		{
+            var query = document.getElementById("txt").value;
+            if( query == "" )
+            {
+                  alert("Empty field! Please enter data!");
+                  return;
+            }
+			WriteCookie();
+			
+		}
+    function WriteCookie()
+            {
+               cookievalue= escape(document.getElementById("txt").value) + ";";
+               document.cookie="name=" + cookievalue;
+			   window.location.assign("tabledisplay.html");
+               
+            }
+	</script>
+</head>
+<body class="amber lighten-5">
+    <br>
+    <nav class="teal lighten-1">
+        <div class="navbar-wrapper container">
+        <a class="brand-logo white-text">DATA LINEAGE</a>
+        </div>
+    </nav>
+    
+    <br>
+    <br>
+    <center>
+    <form method="get" action="tabledisplay.html" class="col s10 ">
+      <div class="row">
+        <div class="input-field col s10 offset-m1">
+          <textarea id="txt" class="materialize-textarea"></textarea>
+          <label for="txt">Enter your query here!</label>
+        </div>
+        </div>
+        
+    <button class="btn waves-effect waves-light" onClick="validatefun()"> Submit Query</button>
+   
+    <button class="btn waves-effect waves-light" onClick="clrfun()"> Clear Query</button>
+    
+    </form>
+    <br>        <br>        <br>    <br>    
+    
+    <div class="container">
+    <div class="section">
+
+      <!--   Icon Section   -->
+      <div class="row">
+        <div class="col s14 m4">
+            <h4 class="center">Data Lineage</h4>
+
+            <p class="light">A data life cycle that includes the data's origins and where it moves over time. End users are able to trace back dat ain their reports to the original source through all different layers and transformation and presentation steps.</p>
+        </div>
+
+        <div class="col s14 m4">
+            <h4 class="center">ETL Conversion</h4>
+
+            <p class="light">ETL technologies are an essential part of data warehousing and data integration projects. Occasionally, a need arises to convert systems from ETL (Extract-Transform-Load) style to ELT (Extract-Load-Transform) style.</p>
+        </div>
+
+        <div class="col s14 m4">
+            <h4 class="center">Impact Analysis</h4>
+
+            <p class="light">IT needs to know which reports and users will be affected when a change is made to one of the source systems.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</center>
+</body>
+</html>
